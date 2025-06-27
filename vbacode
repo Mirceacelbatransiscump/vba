@@ -1,0 +1,202 @@
+
+
+Private Sub UserForm_Initialize()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Data Assistance")
+    
+    Dim rng As Range
+    Dim foundCell As Range
+    Set foundCell = ws.Columns("A:A").Find(What:=PrintFile.Articolo.Value, LookIn:=xlValues, LookAt:=xlWhole)
+    Set rng = ws.Range("A3:A" & ws.Cells(ws.Rows.Count, "A").End(xlUp).Row)
+    
+    With PrintFile.Articolo
+        .Clear
+        Dim cell As Range
+        For Each cell In rng
+            If Not IsEmpty(cell.Value) Then
+                .AddItem cell.Value
+            End If
+        Next cell
+    End With
+
+    With PrintFile
+        .Desc_text.Visible = False
+        .Desc_text.Locked = True
+        .Lotto_text.Visible = False
+        .Lotto_text.Locked = True
+        .NRPAGINE_text.Visible = False
+        .NRPAGINE_text.Locked = True
+        .DRW_text.Visible = False
+        .DRW_text.Locked = True
+        .SAP_text.Visible = False
+        .SAP_text.Locked = True
+        .QT_text.Visible = False
+        .QT_text.Locked = True
+        .Weight_text.Visible = False
+        .Weight_text.Locked = True
+    End With
+End Sub
+
+Private Sub QT_text_Change()
+    Dim calculatedWeight As Double
+    If IsNumeric(PrintFile.QT_text.Value) Then
+        Dim qtValue As Double
+        qtValue = CDbl(PrintFile.QT_text.Value)
+        
+        If qtValue > 1000 Then
+            qtValue = 1000
+            PrintFile.QT_text.Value = qtValue
+        End If
+        
+        Dim ws As Worksheet
+        Set ws = ThisWorkbook.Sheets("Data Assistance")
+        
+        Dim foundCell As Range
+        Set foundCell = ws.Columns("A:A").Find(What:=PrintFile.Articolo.Value, LookIn:=xlValues, LookAt:=xlWhole)
+        
+        If Not foundCell Is Nothing Then
+            Dim weightMultiplier As Double
+            weightMultiplier = ws.Cells(foundCell.Row, foundCell.Column + 2).Value
+            
+            calculatedWeight = PrintFile.QT_text.Value * weightMultiplier
+            PrintFile.Weight_text.Value = Format(calculatedWeight, "0.0") & " Kg"
+        End If
+    Else
+        PrintFile.Weight_text.Value = ""
+    End If
+End Sub
+
+Private Sub Articolo_Change()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Data Assistance")
+    Dim foundCell As Range
+    Set foundCell = ws.Columns("A:A").Find(What:=PrintFile.Articolo.Value, LookIn:=xlValues, LookAt:=xlWhole)
+
+    If Not foundCell Is Nothing Then
+        PrintFile.DRW_text.Value = ws.Cells(foundCell.Row, foundCell.Column + 1).Value
+        PrintFile.Desc_text.Value = ws.Cells(foundCell.Row, foundCell.Column + 4).Value
+        PrintFile.SAP_text.Value = ws.Cells(foundCell.Row, foundCell.Column + 3).Value
+    End If
+   
+    With PrintFile
+        .Lotto_text.Visible = True
+        .Lotto_text.Locked = False
+        .Desc_text.Visible = True
+        .Desc_text.Locked = True
+        .NRPAGINE_text.Visible = True
+        .NRPAGINE_text.Locked = False
+        .DRW_text.Visible = True
+        .DRW_text.Locked = True
+        .SAP_text.Visible = True
+        .SAP_text.Locked = True
+        .QT_text.Visible = True
+        .QT_text.Locked = False
+        .Weight_text.Visible = True
+        .Weight_text.Locked = True
+        .Desc.Value = "Descrizione"
+        .Lotto.Value = "Lotto"
+        .NrPag.Value = "Numero Etichette"
+        .DRW.Value = "Drawing and Revision"
+        .SAP.Value = "Sap Number"
+        .QT.Value = "Quantity"
+        .Weight.Value = "Net Weight"
+        .QT_text.Value = ""
+        .Lotto_text.Value = ""
+    End With
+End Sub
+Private Sub Stampa_Click()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Stampa")
+    
+    Dim errorMessage As String
+    errorMessage = ""
+    
+    If PrintFile.Lotto_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Lotto è vuoto." & vbCrLf
+    End If
+    If PrintFile.NRPAGINE_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Numero Pagine è vuoto." & vbCrLf
+    End If
+    If PrintFile.DRW_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Drawing and Revision è vuoto." & vbCrLf
+    End If
+    If PrintFile.SAP_text.Value = "" Then
+        errorMessage = errorMessage & "Valore SAP è vuoto." & vbCrLf
+    End If
+    If PrintFile.Weight_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Peso è vuoto." & vbCrLf
+    End If
+    If PrintFile.Desc_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Descrizione è vuoto." & vbCrLf
+    End If
+    If PrintFile.QT_text.Value = "" Then
+        errorMessage = errorMessage & "Valore Quantita è vuoto." & vbCrLf
+    End If
+    
+    If errorMessage <> "" Then
+        MsgBox errorMessage, vbExclamation, "Valori Mancanti"
+        Exit Sub
+    End If
+    
+    ws.Range("B10").Value = PrintFile.Lotto_text.Value
+    ws.Range("B8").Value = PrintFile.DRW_text.Value
+    ws.Range("B12").Value = PrintFile.SAP_text.Value
+    ws.Range("F10").Value = PrintFile.Weight_text.Value
+    ws.Range("B6").Value = PrintFile.Desc_text.Value
+    ws.Range("D10").Value = PrintFile.QT_text.Value
+
+    If IsNumeric(PrintFile.NRPAGINE_text.Value) And Val(PrintFile.NRPAGINE_text.Value) >= 2 Then
+        ws.Range("B24").Value = PrintFile.Lotto_text.Value
+        ws.Range("B22").Value = PrintFile.DRW_text.Value
+        ws.Range("B26").Value = PrintFile.SAP_text.Value
+        ws.Range("F24").Value = PrintFile.Weight_text.Value
+        ws.Range("B20").Value = PrintFile.Desc_text.Value
+        ws.Range("D24").Value = PrintFile.QT_text.Value
+    End If
+
+    If PrintFile.Articolo.Value = "C118 RH" Or PrintFile.Articolo.Value = "C118 LH" Or _
+        PrintFile.Articolo.Value = "MACAN RH NO AVZ" Or PrintFile.Articolo.Value = "MACAN LH NO AVZ" Or PrintFile.Articolo.Value = "MACAN RH AVZ" Or PrintFile.Articolo.Value = "MACAN LH AVZ" Or _
+       PrintFile.Articolo.Value = "X118 RH" Or PrintFile.Articolo.Value = "X118 LH" Or _
+       PrintFile.Articolo.Value = "A236 RH" Or PrintFile.Articolo.Value = "A236 LH" Then
+        ws.Range("C1,C15").Value = "AGC Automotive Czech a.s."
+        ws.Range("C2,C16").Value = "Osada 33 Chuderice"
+        ws.Range("C3,C17").Value = "Bilina 41801"
+        ws.Range("C4,C18").Value = "Czech Republic"
+    End If
+
+    If PrintFile.Articolo.Value = "C174 Rear" Or PrintFile.Articolo.Value = "C174 Front" Then
+        ws.Range("C1,C15").Value = "SPLIFAR S.A."
+        ws.Range("C2,C16").Value = "Avenue du Maquis, 10"
+        ws.Range("C3,C17").Value = "B-6220 FLEURUS"
+        ws.Range("C4,C18").Value = "BELGIUM"
+    End If
+    
+    If PrintFile.Articolo.Value = "X294 RH" Or PrintFile.Articolo.Value = "X294 LH" Or _
+    PrintFile.Articolo.Value = "X296 LH" Or PrintFile.Articolo.Value = "X296 RH" Then
+        ws.Range("C1,C15").Value = "AGC GLASS CO. NORTH AMERICA (AGNA)"
+        ws.Range("C2,C16").Value = "700 AFC ROAD"
+        ws.Range("C3,C17").Value = "Church Hill - 37642"
+        ws.Range("C4,C18").Value = "US"
+    End If
+    
+    
+    Dim numPages As Integer
+    numPages = Val(PrintFile.NRPAGINE_text.Value)
+    
+    Dim i As Integer
+    
+    For i = 1 To numPages Step 2
+        If i + 1 <= numPages Then
+            ' Two labels per page
+            ws.PageSetup.PrintArea = "A1:F26"
+        Else
+            ' One label on the last page
+            ws.PageSetup.PrintArea = "A1:F12"
+        End If
+        
+        ' Print the worksheet
+        ws.PrintOut
+    Next i
+    
+End Sub
+
